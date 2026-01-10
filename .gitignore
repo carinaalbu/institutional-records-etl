@@ -1,0 +1,21 @@
+# --- Python & Conda ---
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.env
+.venv
+env/
+venv/
+
+# --- Project Data ---
+data/interim/*
+data/processed/*
+
+# --- Reports ---
+reports/*.pdf
+reports/*.html
+reports/*.png
+
+# --- OS Files ---
+Thumbs.db
+Desktop.ini
