@@ -1,0 +1,18 @@
+dataset_info:
+  title: "Synthetic Institutional Records"
+  description: "Aggregated administrative logs cleaned for reproducibility course."
+  version: "1.0.0"
+  owner: "Albu Carina"
+
+provenance:
+  source: "Synthetic generation (Course Material)"
+  creation_date: "2024-10-01"
+  original_files:
+    - "records_2022.csv"
+    - "records_2023.csv"
+
+processing_notes:
+  - "Merged 2022 and 2023 schemas."
+  - "Renamed 'source' to 'source_system'."
+  - "Removed duplicate IDs."
+  - "Imputed missing values for 2022 new columns."
