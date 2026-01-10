@@ -1,5 +1,5 @@
 @echo off
-REM Windows Automation Script (Conda Version)
+REM Windows Automation Pipeline
 
 IF "%1"=="install" GOTO install
 IF "%1"=="run" GOTO run
@@ -8,18 +8,34 @@ IF "%1"=="all" GOTO all
 GOTO help
 
 :install
-echo Installing dependencies via Conda...
+echo [1/4] Installing dependencies...
 conda install --yes --file requirements.txt
 GOTO end
 
 :run
-echo Running ETL pipeline...
+echo [2/4] Verifying Data Integrity...
+python src/checksum.py verify
+IF %ERRORLEVEL% NEQ 0 (
+    echo INTEGRITY CHECK FAILED. Stopping pipeline.
+    EXIT /B 1
+)
+
+echo [3/4] Running ETL Cleaning...
 python src/etl.py
+IF %ERRORLEVEL% NEQ 0 (
+    echo ETL FAILED. Stopping pipeline.
+    EXIT /B 1
+)
+
+echo [4/4] Generating Analysis Report...
+python src/analyze.py
+echo PIPELINE COMPLETE SUCCESS.
 GOTO end
 
 :clean
-echo Cleaning processed directory...
+echo Cleaning processed data and reports...
 del /Q "data\processed\*"
+del /Q "reports\pipeline_summary.txt"
 echo Done.
 GOTO end
 
@@ -31,9 +47,9 @@ GOTO end
 :help
 echo.
 echo Usage:
-echo   .\make.bat install   - Install dependencies (Conda)
-echo   .\make.bat run       - Run the pipeline
-echo   .\make.bat clean     - Delete processed files
+echo   .\make.bat all       - Install + Verify + Clean + Report
+echo   .\make.bat run       - Verify + Clean + Report
+echo   .\make.bat clean     - Delete outputs
 echo.
 GOTO end
 

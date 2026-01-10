@@ -1,26 +1,29 @@
-# Makefile for Institutional Records Pipeline
+# Pipeline Makefile
 
-# Python interpreter
 PYTHON = python
 
-# Directories
-RAW_DIR = data/raw
-PROCESSED_DIR = data/processed
+.PHONY: all install verify clean analyze
 
-.PHONY: all install run clean
+# The Full Workflow
+all: install verify clean analyze
 
-# Default target: do everything
-all: install run
-
-# 1. Install dependencies using Conda
 install:
 	conda install --yes --file requirements.txt
 
-# 2. Run the ETL pipeline
-run:
+# Step 1: Validate Integrity
+verify:
+	$(PYTHON) src/checksum.py verify
+
+# Step 2: Clean Data (Depends on Verify passing)
+clean: verify
 	$(PYTHON) src/etl.py
 
-# 3. Clean up processed data
-clean:
-	rm -rf $(PROCESSED_DIR)/*
-	@echo "Cleaned processed data."
+# Step 3: Analyze & Report (Depends on Clean passing)
+analyze: clean
+	$(PYTHON) src/analyze.py
+
+# Utility: Remove generated files
+reset:
+	rm -rf data/processed/*
+	rm -rf reports/pipeline_summary.txt
+	@echo "Pipeline reset."
