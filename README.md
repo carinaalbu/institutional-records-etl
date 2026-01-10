@@ -68,3 +68,37 @@ python src/etl.py
 # [TODO: Add specific execution command here]
 # Example: python src/main.py
 ````
+
+### Setup (Manual)
+
+If you are not using the automated `make` commands, you can recreate the environment manually:
+
+1. **Create a Conda environment** (Optional but recommended):
+   ```bash
+   conda create -n etl-env python=3.9
+   conda activate etl-env
+   ```
+
+## 4. Data Integrity
+
+To ensure the raw data has not been corrupted or tampered with, this project includes a SHA-256 checksum verification system.
+
+- **Manifest File:** `data/raw/checksums.sha256` (Contains the original file fingerprints).
+- **Verification Script:** `src/checksum.py`
+
+**To verify the dataset integrity:**
+Run the following command. It will check the current files against the stored fingerprints.
+
+````bash
+python src/checksum.py verify
+### Update the Numbering
+Since you inserted a new section 4, you should rename the old **"4. Expected Outputs"** to **"5. Expected Outputs"**.
+
+### Final Commit
+Once you have saved the README, send the changes to GitHub so your repo is 100% up to date.
+
+```powershell
+git add README.md
+git commit -m "docs: Add data integrity verification instructions to README"
+git push
+````
