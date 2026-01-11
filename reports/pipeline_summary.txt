@@ -1,0 +1,26 @@
+AUTOMATED PIPELINE REPORT
+=========================
+
+Total Records Processed: 2600
+
+Records by Category:
+category
+billing       360
+admission     355
+imaging       318
+discharge     314
+transfer      307
+medication    280
+follow_up     263
+lab_test      247
+follow-up      81
+labtest        58
+lab test       17
+
+Records by Source System:
+source_system
+manual_entry    281
+system_c        277
+system_b        264
+import_batch    255
+system_a        250
