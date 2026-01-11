@@ -9,7 +9,7 @@ venv/
 
 # --- Project Data ---
 data/interim/*
-data/processed/*
+# data/processed/*
 
 # --- Reports ---
 reports/*.pdf
