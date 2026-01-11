@@ -1,84 +1,80 @@
 import pandas as pd
 import os
-import sys
 
 # Define file paths
-# We use '..' to go up one level from 'src' to the root, then into 'data'
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RAW_DIR = os.path.join(BASE_DIR, 'data', 'raw')
-PROCESSED_DIR = os.path.join(BASE_DIR, 'data', 'processed')
+RAW_DIR = "data/raw"
+PROCESSED_DIR = "data/processed"
+FILES = {
+    2022: os.path.join(RAW_DIR, "records_2022.csv"),
+    2023: os.path.join(RAW_DIR, "records_2023.csv")
+}
+OUTPUT_FILE_CSV = os.path.join(PROCESSED_DIR, "records_clean.csv")
+OUTPUT_FILE_JSON = os.path.join(PROCESSED_DIR, "records_clean.json")
 
 def load_data():
-    """Reads the raw CSV files."""
+    """Loads raw data from CSV files."""
     print("Loading data...")
-    try:
-        # Load 2022 data
-        path_22 = os.path.join(RAW_DIR, 'records_2022.csv')
-        df_2022 = pd.read_csv(path_22)
-        print(f"  - Loaded 2022 data: {df_2022.shape[0]} rows")
+    dfs = []
+    for year, file_path in FILES.items():
+        if os.path.exists(file_path):
+            df = pd.read_csv(file_path)
+            df['year'] = year  # Add year column to track origin
+            dfs.append(df)
+        else:
+            print(f"Warning: {file_path} not found.")
+    return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
 
-        # Load 2023 data
-        path_23 = os.path.join(RAW_DIR, 'records_2023.csv')
-        df_2023 = pd.read_csv(path_23)
-        print(f"  - Loaded 2023 data: {df_2023.shape[0]} rows")
+def transform_data(df):
+    """Cleans and harmonizes the dataset."""
+    print("Transforming data...")
+    
+    # 1. Standardize Column Names (Lowercase + Strip spaces)
+    df.columns = df.columns.str.strip().str.lower()
+    
+    # 2. Harmonize Columns (Fill missing columns for 2022 data)
+    if 'department' not in df.columns:
+        df['department'] = "Unknown"
+    else:
+        df['department'] = df['department'].fillna("Unknown")
         
-        return df_2022, df_2023
-    except FileNotFoundError as e:
-        print(f"Error: Could not find file. Make sure your files are in data/raw/. \nDetails: {e}")
-        sys.exit(1)
+    if 'priority' not in df.columns:
+        df['priority'] = "Unknown"
+    else:
+        df['priority'] = df['priority'].fillna("Unknown")
 
-def align_schema(df_22, df_23):
-    """Fixes schema drift so 2022 matches 2023."""
-    print("Aligning schemas...")
-    
-    # 1. Rename 'source' to 'source_system' in 2022
-    if 'source' in df_22.columns:
-        df_22.rename(columns={'source': 'source_system'}, inplace=True)
-    
-    # 2. Add missing columns to 2022 (department, priority)
-    # We fill them with 'Unknown' because that data didn't exist in 2022
-    df_22['department'] = 'Unknown'
-    df_22['priority'] = 'Unknown'
-    
-    # 3. Combine them
-    df_combined = pd.concat([df_22, df_23], ignore_index=True)
-    return df_combined
-
-def clean_data(df):
-    """Cleans garbage values and formats text."""
-    print("Cleaning data...")
-    
-    # 1. Standardize text (lowercase, remove extra spaces)
-    # This fixes "IMAGING", "imaging ", "Imaging" -> "imaging"
-    text_cols = ['category', 'source_system', 'status', 'unit']
+    # 3. Clean Text Columns
+    text_cols = ['category', 'source_system', 'department']
     for col in text_cols:
-        df[col] = df[col].astype(str).str.lower().str.strip()
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.lower().str.strip()
 
-    # 2. Handle missing numerical values
-    # Fill missing values in 'value' with 0 (or you could drop them)
-    df['value'] = pd.to_numeric(df['value'], errors='coerce').fillna(0)
+    # 4. Handle Missing Values
+    if 'value' in df.columns:
+        df['value'] = pd.to_numeric(df['value'], errors='coerce').fillna(0)
 
-    # 3. Drop duplicates based on record_id
-    before_dedup = len(df)
-    df.drop_duplicates(subset=['record_id'], keep='first', inplace=True)
-    after_dedup = len(df)
-    print(f"  - Removed {before_dedup - after_dedup} duplicate rows")
-
+    # 5. Remove Duplicates (based on record_id if it exists)
+    if 'record_id' in df.columns:
+        df = df.drop_duplicates(subset=['record_id'])
+        
     return df
 
-def main():
-    # Ensure output directory exists
+def save_data(df):
+    """Saves the processed data to multiple formats."""
     os.makedirs(PROCESSED_DIR, exist_ok=True)
-
-    # Run the pipeline steps
-    df_22, df_23 = load_data()
-    df_merged = align_schema(df_22, df_23)
-    df_clean = clean_data(df_merged)
-
-    # Save output
-    output_path = os.path.join(PROCESSED_DIR, 'records_clean.csv')
-    df_clean.to_csv(output_path, index=False)
-    print(f"Success! Cleaned data saved to: {output_path}")
+    
+    # Save as CSV (Standard)
+    df.to_csv(OUTPUT_FILE_CSV, index=False)
+    print(f"Saved CSV to: {OUTPUT_FILE_CSV}")
+    
+    # Save as JSON (New Requirement)
+    df.to_json(OUTPUT_FILE_JSON, orient="records", indent=2)
+    print(f"Saved JSON to: {OUTPUT_FILE_JSON}")
 
 if __name__ == "__main__":
-    main()
+    df_raw = load_data()
+    if not df_raw.empty:
+        df_clean = transform_data(df_raw)
+        save_data(df_clean)
+        print("ETL Pipeline Completed Successfully.")
+    else:
+        print("ETL Failed: No data loaded.")
